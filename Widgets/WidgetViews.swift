@@ -214,36 +214,52 @@ struct SearchWidgetView: View {
     var entry: Provider.Entry
 
     var body: some View {
-        ZStack {
-            Rectangle()
-                .fill(Color(designSystemColor: .backgroundSheets))
-                .accessibilityLabel(Text(UserText.searchDuckDuckGo))
-
-            VStack(alignment: .center, spacing: 15) {
-
-                Image(.logo)
-                    .resizable()
-                    .frame(width: 46, height: 46, alignment: .center)
-                    .isHidden(false)
-                    .accessibilityHidden(true)
-
-                ZStack(alignment: Alignment(horizontal: .trailing, vertical: .center)) {
-
-                    RoundedRectangle(cornerSize: CGSize(width: 8, height: 8))
-                        .fill(Color.widgetSearchFieldBackground)
-                        .frame(width: 126, height: 46)
-
-                    Image(.findSearch20)
-                        .frame(width: 20, height: 20)
-                        .padding(.leading)
-                        .padding(.trailing, 13)
-                        .isHidden(false)
-                        .accessibilityHidden(true)
-                        .foregroundColor(Color(designSystemColor: .textPrimary).opacity(0.5))
-                }
-            }.accessibilityHidden(true)
+        VStack(alignment: .center, spacing: 15) {
+            Image(.logo)
+                .resizable()
+                .widgetAccentedRenderingModeIfAvailable(.fullColor)
+                .frame(width: 46, height: 46, alignment: .center)
+                .accessibilityHidden(true)
+            SearchFieldView()
         }
+        .accessibilityLabel(Text(UserText.searchDuckDuckGo))
         .widgetContainerBackground(color: Color(designSystemColor: .backgroundSheets))
+    }
+
+    struct SearchFieldView: View {
+        var body: some View {
+            ZStack(alignment: .trailing) {
+                if #available(iOS 18, *) {
+                    searchFieldBackground
+                        .modifier(SearchFieldAccentedViewModifier())
+                } else {
+                    searchFieldBackground
+                }
+                Image(.findSearch20)
+                    .widgetAccentedRenderingModeIfAvailable(.fullColor)
+                    .frame(width: 20, height: 20)
+                    .padding(.leading)
+                    .padding(.trailing, 13)
+                    .accessibilityHidden(true)
+                    .foregroundColor(Color(designSystemColor: .textPrimary).opacity(0.5))
+            }
+        }
+
+        @ViewBuilder var searchFieldBackground: some View {
+            RoundedRectangle(cornerSize: CGSize(width: 8, height: 8))
+                .fill(Color.widgetSearchFieldBackground)
+                .frame(width: 126, height: 46)
+        }
+    }
+}
+
+@available(iOS 18.0, *)
+struct SearchFieldAccentedViewModifier: ViewModifier {
+    @Environment(\.widgetRenderingMode)
+    var widgetRenderingMode
+
+    func body(content: Content) -> some View {
+        content.opacity(widgetRenderingMode == .accented ? 0.2 : 1.0)
     }
 }
 
