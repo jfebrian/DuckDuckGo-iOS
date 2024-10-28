@@ -77,36 +77,39 @@ struct FavoriteView: View {
 }
 
 struct LargeSearchFieldView: View {
-
     var body: some View {
         Link(destination: DeepLinks.newSearch) {
             ZStack {
-
-                RoundedRectangle(cornerSize: CGSize(width: 8, height: 8))
-                    .fill(Color.widgetSearchFieldBackground)
-                    .frame(minHeight: 46, maxHeight: 46)
-                    .padding(.vertical, 16)
-
+                if #available(iOS 18, *) {
+                    searchFieldBackground
+                        .modifier(SearchFieldAccentedViewModifier())
+                } else {
+                    searchFieldBackground
+                }
                 HStack {
-
                     Image(.duckDuckGoColor24)
+                        .widgetAccentedRenderingModeIfAvailable(.fullColor)
                         .frame(width: 24, height: 24, alignment: .leading)
-
                     Text(UserText.searchDuckDuckGo)
                         .daxBodyRegular()
                         .foregroundColor(Color(designSystemColor: .textSecondary))
-
                     Spacer()
-
                     Image(.findSearch20)
+                        .widgetAccentedRenderingModeIfAvailable(.fullColor)
                         .foregroundColor(Color(designSystemColor: .textPrimary).opacity(0.5))
-
-                }.padding(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
-
-            }.unredacted()
+                }
+                .padding(.horizontal, 16)
+            }
+            .unredacted()
         }
     }
 
+    var searchFieldBackground: some View {
+        RoundedRectangle(cornerSize: CGSize(width: 8, height: 8))
+            .fill(Color.widgetSearchFieldBackground)
+            .frame(minHeight: 46, maxHeight: 46)
+            .padding(.vertical, 16)
+    }
 }
 
 struct FavoritesRowView: View {
@@ -160,29 +163,24 @@ struct FavoritesGridView: View {
 }
 
 struct FavoritesWidgetView: View {
-
     @Environment(\.widgetFamily) var widgetFamily
 
     var entry: Provider.Entry
 
     var body: some View {
         ZStack {
-            Rectangle().fill(Color(designSystemColor: .backgroundSheets))
-
             VStack(alignment: .center, spacing: 0) {
-
                 LargeSearchFieldView()
-
                 if entry.favorites.isEmpty, !entry.isPreview {
                     Link(destination: DeepLinks.addFavorite) {
-                        FavoritesGridView(entry: entry).accessibilityLabel(Text(UserText.noFavoritesCTA))
+                        FavoritesGridView(entry: entry)
+                            .accessibilityLabel(Text(UserText.noFavoritesCTA))
                     }
                 } else {
                     FavoritesGridView(entry: entry)
                 }
-
-            }.padding(.bottom, 8)
-
+            }
+            .padding(.bottom, 8)
             VStack(spacing: 4) {
                 Text(UserText.noFavoritesMessage)
                     .daxSubheadRegular()
@@ -190,20 +188,18 @@ struct FavoritesWidgetView: View {
                     .foregroundColor(Color(designSystemColor: .textSecondary))
                     .padding(.horizontal)
                     .accessibilityHidden(true)
-
                 HStack {
                     Text(UserText.noFavoritesCTA)
                         .daxSubheadRegular()
-                        .foregroundColor(Color(designSystemColor: .accent))
-
                     Image(systemName: "chevron.right")
                         .imageScale(.medium)
-                        .foregroundColor(Color(designSystemColor: .accent))
-                }.accessibilityHidden(true)
-
+                }
+                .widgetAccentableIfAvailable()
+                .foregroundColor(Color(designSystemColor: .accent))
+                .accessibilityHidden(true)
             }
             .isVisible(entry.favorites.isEmpty && !entry.isPreview)
-            .padding(EdgeInsets(top: widgetFamily == .systemLarge ? 48 : 60, leading: 0, bottom: 0, trailing: 0))
+            .padding(.top, widgetFamily == .systemLarge ? 48 : 60)
 
         }
         .widgetContainerBackground(color: Color(designSystemColor: .backgroundSheets))
