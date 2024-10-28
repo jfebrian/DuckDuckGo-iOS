@@ -335,6 +335,45 @@ extension Image {
 
 }
 
+extension Image {
+    enum WidgetAccentedRenderingModeEntity {
+        case accented
+        case desaturated
+        case accentedDesaturated
+        case fullColor
+
+        @available(iOS 18, *)
+        var mapToSwiftUI: WidgetAccentedRenderingMode {
+            switch self {
+            case .accented: return .accented
+            case .desaturated: return .desaturated
+            case .accentedDesaturated: return .accentedDesaturated
+            case .fullColor: return .fullColor
+            }
+        }
+    }
+
+    @ViewBuilder func widgetAccentedRenderingModeIfAvailable(
+        _ renderingMode: WidgetAccentedRenderingModeEntity
+    ) -> some View {
+        if #available(iOS 18.0, *) {
+            widgetAccentedRenderingMode(renderingMode.mapToSwiftUI)
+        } else {
+            self
+        }
+    }
+}
+
+extension View {
+    @ViewBuilder func widgetAccentableIfAvailable(_ accentable: Bool = true) -> some View {
+        if #available(iOS 18.0, *) {
+            widgetAccentable(accentable)
+        } else {
+            self
+        }
+    }
+}
+
 struct WidgetViews_Previews: PreviewProvider {
 
     static let mockFavorites: [Favorite] = {
