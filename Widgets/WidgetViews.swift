@@ -251,27 +251,19 @@ struct PasswordsWidgetView: View {
     var entry: Provider.Entry
 
     var body: some View {
-        ZStack {
-            Rectangle()
-                    .fill(Color(designSystemColor: .backgroundSheets))
-                    .accessibilityLabel(Text(UserText.passwords))
-
-            VStack(alignment: .center, spacing: 6) {
-
-                Image(.widgetPasswordIllustration)
-                        .frame(width: 96, height: 72)
-                        .isHidden(false)
-                        .accessibilityHidden(true)
-
-                Text(UserText.passwords)
-                        .daxSubheadRegular()
-                        .foregroundColor(Color(designSystemColor: .textPrimary))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 8)
-
-            }
-            .accessibilityHidden(true)
+        VStack(alignment: .center, spacing: 6) {
+            Image(.widgetPasswordIllustration)
+                .widgetAccentedRenderingModeIfAvailable(.fullColor)
+                .frame(width: 96, height: 72)
+                .accessibilityHidden(true)
+            Text(UserText.passwords)
+                .daxSubheadRegular()
+                .widgetAccentableIfAvailable(false)
+                .foregroundColor(Color(designSystemColor: .textPrimary))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 8)
         }
+        .accessibilityLabel(Text(UserText.passwords))
         .widgetContainerBackground(color: Color(designSystemColor: .backgroundSheets))
     }
 }
