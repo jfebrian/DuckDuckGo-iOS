@@ -108,7 +108,7 @@ extension NEVPNStatus {
     }
 }
 
-@available(iOSApplicationExtension 17.0, *)
+@available(iOS 17.0, *)
 struct VPNStatusView: View {
     @Environment(\.widgetFamily) var family: WidgetFamily
     @Environment(\.colorScheme) private var colorScheme
@@ -141,77 +141,23 @@ struct VPNStatusView: View {
     }
 
     private func connectionView(with status: NEVPNStatus) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 0) {
-                Image(headerImageName(with: status)).padding([.bottom], 7)
-
-                Text(title(with: status))
-                    .font(.system(size: 16, weight: .semibold))
-                    .fontWeight(.semibold)
-                    .foregroundStyle(Color(designSystemColor: .textPrimary))
-
-                if status == .connected {
-                    Text(snoozeTimingStore.isSnoozing ? UserText.vpnWidgetSnoozingUntil(endDate: snoozeEndDateString) : entry.location)
-                        .font(.system(size: 12, weight: .regular))
-                        .foregroundStyle(Color(designSystemColor: .textSecondary))
-                        .opacity(status.isConnected ? 0.8 : 0.6)
-                } else {
-                    Text(UserText.vpnWidgetDisconnectedSubtitle)
-                        .font(.system(size: 12, weight: .regular))
-                        .foregroundStyle(Color(designSystemColor: .textSecondary))
-                        .opacity(status.isConnected ? 0.8 : 0.6)
-                }
-
-                switch status {
-                case .connected:
-                    let buttonTitle = snoozeTimingStore.isSnoozing ? UserText.vpnWidgetLiveActivityWakeUpButton : UserText.vpnWidgetDisconnectButton
-                    let intent: any AppIntent = snoozeTimingStore.isSnoozing ? CancelSnoozeVPNIntent() : DisableVPNIntent()
-
-                    Button(buttonTitle, intent: intent)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(snoozeTimingStore.isSnoozing ?
-                                         connectButtonForegroundColor(isDisabled: false) :
-                                         disconnectButtonForegroundColor(isDisabled: status != .connected))
-                        .buttonStyle(.borderedProminent)
-                        .buttonBorderShape(.roundedRectangle(radius: 8))
-                        .tint(snoozeTimingStore.isSnoozing ?
-                              Color(designSystemColor: .accent) :
-                                disconnectButtonBackgroundColor(isDisabled: status != .connected)
-                        )
-                        .disabled(status != .connected)
-                        .frame(height: 28)
-                        .padding(.top, 6)
-                        .padding(.bottom, 16)
-                case .connecting, .reasserting:
-                    Button(UserText.vpnWidgetDisconnectButton, intent: DisableVPNIntent())
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(disconnectButtonForegroundColor(isDisabled: status != .connected))
-                        .buttonStyle(.borderedProminent)
-                        .buttonBorderShape(.roundedRectangle(radius: 8))
-                        .tint(disconnectButtonBackgroundColor(isDisabled: status != .connected))
-                        .disabled(status != .connected)
-                        .frame(height: 28)
-                        .padding(.top, 6)
-                        .padding(.bottom, 16)
-                case .disconnected, .disconnecting:
-                    connectButton
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(connectButtonForegroundColor(isDisabled: status != .disconnected))
-                        .buttonStyle(.borderedProminent)
-                        .buttonBorderShape(.roundedRectangle(radius: 8))
-                        .tint(Color(designSystemColor: .accent))
-                        .disabled(status != .disconnected)
-                        .frame(height: 28)
-                        .padding(.top, 6)
-                        .padding(.bottom, 16)
-                default:
-                    Spacer()
-                }
-            }
-            .padding(.horizontal, 14)
-            .padding(.top, 16)
-            Spacer()
+        VStack(alignment: .leading, spacing: 0) {
+            Image(headerImageName(with: status))
+                .widgetAccentedRenderingModeIfAvailable(.fullColor)
+                .padding(.bottom, 7)
+            Text(title(with: status))
+                .font(.system(size: 16, weight: .semibold))
+                .fontWeight(.semibold)
+                .foregroundStyle(Color(designSystemColor: .textPrimary))
+            Text(subtitle(with: status))
+                .font(.system(size: 12, weight: .regular))
+                .foregroundStyle(Color(designSystemColor: .textSecondary))
+                .opacity(status.isConnected ? 0.8 : 0.6)
+            button(with: status)
         }
+        .padding(.horizontal, 14)
+        .padding(.top, 16)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var snoozeEndDateString: String {
@@ -284,9 +230,93 @@ struct VPNStatusView: View {
         }
     }
 
+    private func subtitle(with status: NEVPNStatus) -> String {
+        switch (status, snoozeTimingStore.isSnoozing) {
+        case (.connected, true):
+            UserText.vpnWidgetSnoozingUntil(endDate: snoozeEndDateString)
+        case (.connected, false):
+            entry.location
+        default:
+            UserText.vpnWidgetDisconnectedSubtitle
+        }
+    }
+
+    @ViewBuilder private func button(with status: NEVPNStatus) -> some View {
+        switch (status, snoozeTimingStore.isSnoozing) {
+        case (.connected, true):
+            Button(UserText.vpnWidgetLiveActivityWakeUpButton, intent: CancelSnoozeVPNIntent())
+                .foregroundStyle(connectButtonForegroundColor(isDisabled: false))
+                .disabled(status != .connected)
+                .modifier(VPNWidgetButtonViewModifier(
+                    tint: Color(designSystemColor: .accent)
+                ))
+        case (.connected, false):
+            Button(UserText.vpnWidgetDisconnectButton, intent: DisableVPNIntent())
+                .foregroundStyle(disconnectButtonForegroundColor(isDisabled: status != .connected))
+                .disabled(status != .connected)
+                .modifier(VPNWidgetButtonViewModifier(
+                    tint: disconnectButtonBackgroundColor(isDisabled: status != .connected)
+                ))
+        case (.connecting, _), (.reasserting, _):
+            Button(UserText.vpnWidgetDisconnectButton, intent: DisableVPNIntent())
+                .foregroundStyle(connectButtonForegroundColor(isDisabled: status != .disconnected))
+                .disabled(status != .connected)
+                .modifier(VPNWidgetButtonViewModifier(
+                    tint: disconnectButtonBackgroundColor(isDisabled: status != .connected)
+                ))
+        case (.disconnected, _), (.disconnecting, _):
+            connectButton
+                .foregroundStyle(connectButtonForegroundColor(isDisabled: status != .disconnected))
+                .disabled(status != .disconnected)
+                .modifier(VPNWidgetButtonViewModifier(
+                    tint: Color(designSystemColor: .accent)
+                ))
+        default:
+            Spacer()
+        }
+    }
+
+    struct VPNWidgetButtonViewModifier: ViewModifier {
+        @Environment(\.colorScheme) private var colorScheme
+
+        let tint: Color
+
+        func body(content: Content) -> some View {
+            if #available(iOS 18.0, *) {
+                return commonModifier(content)
+                    .modifier(VPNWidgetButtonAccentedViewModifier(tint: tint))
+            } else {
+                return commonModifier(content)
+            }
+        }
+
+        @ViewBuilder func commonModifier(_ content: Content) -> some View {
+            content
+                .font(.system(size: 14, weight: .semibold))
+                .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.roundedRectangle(radius: 8))
+                .frame(height: 28)
+                .padding(.top, 6)
+                .padding(.bottom, 16)
+        }
+    }
+
+    @available(iOS 18.0, *)
+    struct VPNWidgetButtonAccentedViewModifier: ViewModifier {
+        @Environment(\.widgetRenderingMode)
+        var widgetRenderingMode
+
+        let tint: Color
+
+        func body(content: Content) -> some View {
+            content
+                .tint(tint.opacity(widgetRenderingMode == .accented ? 0.2 : 1.0))
+                .widgetAccentableIfAvailable()
+        }
+    }
 }
 
-@available(iOSApplicationExtension 17.0, *)
+@available(iOS 17.0, *)
 struct VPNStatusWidget: Widget {
     let kind: String = "VPNStatusWidget"
 
